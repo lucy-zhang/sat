@@ -11,7 +11,10 @@ spec :: Spec
 spec = do
     describe "cnfParser" $ do
         it "parses" $ do
-            parse cnfParser "" "p cnf 3 2\n1 -3 0\n2 3 -1 0\n" `shouldBe` Right (CnfInstance [[1, -3], [2, 3, -1]])
+            parse cnfParser "" "p cnf 3 2\n1 -3 0\n2 3 -1 0\n" `shouldBe` Right (3, CnfInstance [[1, -3], [2, 3, -1]])
+
+        it "parses" $ do
+            parse cnfParser "" "c comment\np cnf 3 2\n1 -3 0\n2 3 -1 0\n" `shouldBe` Right (3, CnfInstance [[1, -3], [2, 3, -1]])
 
     describe "cnfToExpr" $ do
         it "converts to Expr" $ do
@@ -76,6 +79,13 @@ spec = do
 
         it "finds satisfying solutions" $ do
             forAll (instGen numVars numLits numClauses) (solveSatProperty numVars)
+
+    describe "formatAssignment" $ do
+        it "formats unsat result" $ do
+            formatAssignment Nothing `shouldBe` "UNSAT"
+
+        it "formats sat result" $ do
+            formatAssignment (Just [(1, True), (2, False)]) `shouldBe` "SAT\n1 -2 0"
 
 numVars :: Int
 numVars = 5
