@@ -2,7 +2,7 @@ module Sat where
 
 import Text.Parsec
 import Text.Parsec.String
-import Test.QuickCheck
+import Control.Monad (mplus)
 
 newtype CnfInstance = CnfInstance { vars :: [[Int]] }
     deriving (Eq, Show)
@@ -62,8 +62,4 @@ solve maxVar expr = solve' [] 1 maxVar expr
           solve' as minVar' maxVar' e =
             let true = solve' ((minVar', True) : as) (minVar' + 1) maxVar' (simplify (assign (minVar', True) e))
                 false = solve' ((minVar', False) : as) (minVar' + 1) maxVar' (simplify (assign (minVar', False) e))
-            in case true of
-                Just s -> Just s
-                Nothing -> case false of
-                    Just s -> Just s
-                    Nothing -> Nothing
+            in true `mplus` false
