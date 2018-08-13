@@ -6,4 +6,4 @@ main :: IO ()
 main = interact (\s ->
     case parseCnf s of
         Left err -> show err
-        Right (nVars, inst) -> (formatAssignment . solve nVars . cnfToExpr) inst <> "\n")
+        Right (nVars, inst) -> (formatAssignment . solve nVars . transform) inst <> "\n")
