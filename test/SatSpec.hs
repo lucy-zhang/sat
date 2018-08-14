@@ -36,6 +36,9 @@ spec = do
         it "finds a variable that appears pure in two clauses" $ do
             pureAssignment [M.fromList [(2, True), (3, False)], M.fromList [(2, True), (3, True)]] `shouldBe` Just (2, True)
 
+        it "finds a variable that appears pure in two clauses (negated)" $ do
+            pureAssignment [M.fromList [(2, False), (3, False)], M.fromList [(2, False), (3, True)]] `shouldBe` Just (2, False)
+
         it "returns Nothing if no variable appears pure" $ do
             pureAssignment [M.fromList [(2, True), (3, False)], M.fromList [(2, False), (3, True)]] `shouldBe` Nothing
 

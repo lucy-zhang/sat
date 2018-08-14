@@ -7,6 +7,7 @@ import Data.List (sort)
 import Data.Maybe (mapMaybe)
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as M
+import Debug.Trace
 
 newtype CnfInstance = CnfInstance { vars :: [[Int]] }
     deriving (Eq, Show)
@@ -53,10 +54,12 @@ solve :: [IntMap Bool] -> Maybe [(Int, Bool)]
 solve clauses = solve' [] clauses
 
 solve' :: [(Int, Bool)] -> [IntMap Bool] -> Maybe [(Int, Bool)]
+solve' assigns _ | trace (show assigns) False = undefined
 solve' assigns [] = Just assigns
 solve' assigns clauses = case (unitAssignment clauses, pureAssignment clauses) of
         (Just a, _) -> (assign a clauses) >>= solve' (a : assigns)
         (_, Just a) -> (assign a clauses) >>= solve' (a : assigns)
+        _ | trace "backtracking case" False -> undefined
         _ -> let (n, _) = M.findMin $ head clauses
                  trueCase = (assign (n, True) clauses) >>= solve' ((n, True) : assigns)
                  falseCase = (assign (n, False) clauses) >>= solve' ((n, False) : assigns)
