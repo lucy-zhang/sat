@@ -5,8 +5,8 @@ import Text.Parsec.String
 import Control.Monad (mplus)
 import Data.List (sort)
 import Data.Maybe (mapMaybe)
-import Data.Map (Map)
-import qualified Data.Map as M
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntMap.Strict as M
 
 newtype CnfInstance = CnfInstance { vars :: [[Int]] }
     deriving (Eq, Show)
@@ -34,11 +34,11 @@ problem = string "p cnf " *> nat <* char ' ' <* nat <* spaces
 parseCnf :: String -> Either ParseError (Int, CnfInstance)
 parseCnf = parse cnfParser ""
 
-transform :: CnfInstance -> [Map Int Bool]
+transform :: CnfInstance -> [IntMap Bool]
 transform (CnfInstance clauses) = fmap (M.fromList . fmap lit) clauses
     where lit n = if n > 0 then (n, True) else (-n, False)
 
-assign :: (Int, Bool) -> [Map Int Bool] -> Maybe [Map Int Bool]
+assign :: (Int, Bool) -> [IntMap Bool] -> Maybe [IntMap Bool]
 assign assignment clauses
     | any M.null newClauses = Nothing
     | otherwise = Just newClauses
@@ -49,15 +49,29 @@ assign assignment clauses
                 | b == b' -> Nothing
                 | otherwise -> Just $ M.delete n cl
 
-solve :: Int -> [Map Int Bool] -> Maybe [(Int, Bool)]
-solve maxVar clauses = solve' [] 1 maxVar (Just clauses)
-    where solve' _ _ _ Nothing = Nothing
-          solve' as minVar' maxVar' (Just []) =
-              Just $ ((\n -> (n, True)) <$> [maxVar', maxVar'-1..minVar']) ++ as
-          solve' as minVar' maxVar' (Just cs) =
-            let true = solve' ((minVar', True) : as) (minVar' + 1) maxVar' (assign (minVar', True) cs)
-                false = solve' ((minVar', False) : as) (minVar' + 1) maxVar' (assign (minVar', False) cs)
-            in true `mplus` false
+solve :: [IntMap Bool] -> Maybe [(Int, Bool)]
+solve clauses = solve' [] clauses
+
+solve' :: [(Int, Bool)] -> [IntMap Bool] -> Maybe [(Int, Bool)]
+solve' assigns [] = Just assigns
+solve' assigns clauses = case (unitAssignment clauses, pureAssignment clauses) of
+        (Just a, _) -> (assign a clauses) >>= solve' (a : assigns)
+        (_, Just a) -> (assign a clauses) >>= solve' (a : assigns)
+        _ -> let (n, _) = M.findMin $ head clauses
+                 trueCase = (assign (n, True) clauses) >>= solve' ((n, True) : assigns)
+                 falseCase = (assign (n, False) clauses) >>= solve' ((n, False) : assigns)
+            in mplus trueCase falseCase
+
+unitAssignment :: [IntMap Bool] -> Maybe (Int, Bool)
+unitAssignment cls = case filter ((== 1) . M.size) cls of
+    (c : _) -> Just $ head $ M.toList c
+    _ -> Nothing
+
+pureAssignment :: [IntMap Bool] -> Maybe (Int, Bool)
+pureAssignment cls = let pureVars = foldr acc M.empty cls
+    in M.lookupMin pureVars
+    where acc = M.mergeWithKey
+            (const (\b1 -> \b2 -> if b1 == b2 then Just b1 else Nothing)) id id
 
 formatAssignment :: Maybe [(Int, Bool)] -> String
 formatAssignment Nothing = "UNSAT"
