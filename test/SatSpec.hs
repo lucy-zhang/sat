@@ -42,6 +42,9 @@ spec = do
         it "returns Nothing if no variable appears pure" $ do
             pureAssignment [M.fromList [(2, True), (3, False)], M.fromList [(2, False), (3, True)]] `shouldBe` Nothing
 
+        it "returns Nothing if the variable appears more than twice, not pure" $ do
+            pureAssignment [M.fromList [(2, True), (3, False)], M.fromList [(2, False), (3, True)], M.fromList [(2, True), (3, False)]] `shouldBe` Nothing
+
     describe "solve" $ do
         it "finds satisfying solutions" $ do
             forAll (instGen numVars numLits numClauses) solveSatProperty
